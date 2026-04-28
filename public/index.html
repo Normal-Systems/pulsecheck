@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PulseCheck — Uptime Monitoring</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
+    header { background: #1e293b; border-bottom: 1px solid #334155; padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between; }
+    header h1 { font-size: 1.4rem; font-weight: 700; color: #38bdf8; letter-spacing: -0.02em; }
+    header span { font-size: 0.8rem; color: #64748b; }
+    .container { max-width: 900px; margin: 0 auto; padding: 2rem 1rem; }
+    .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .stat-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1.25rem; }
+    .stat-card .label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.4rem; }
+    .stat-card .value { font-size: 1.8rem; font-weight: 700; }
+    .value.green { color: #4ade80; }
+    .value.red { color: #f87171; }
+    .value.blue { color: #38bdf8; }
+    .value.yellow { color: #fbbf24; }
+    .section-title { font-size: 1rem; font-weight: 600; color: #94a3b8; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.06em; }
+    .monitor-list { display: flex; flex-direction: column; gap: 0.75rem; }
+    .monitor-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1rem 1.25rem; display: flex; align-items: center; gap: 1rem; }
+    .status-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+    .dot-up { background: #4ade80; box-shadow: 0 0 8px #4ade8080; }
+    .dot-down { background: #f87171; box-shadow: 0 0 8px #f8717180; }
+    .dot-degraded { background: #fbbf24; box-shadow: 0 0 8px #fbbf2480; }
+    .dot-unknown { background: #64748b; }
+    .monitor-info { flex: 1; }
+    .monitor-name { font-weight: 600; font-size: 0.95rem; }
+    .monitor-url { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
+    .monitor-meta { text-align: right; font-size: 0.78rem; color: #64748b; }
+    .monitor-meta .resp { font-weight: 600; color: #94a3b8; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
+    .badge-up { background: #14532d; color: #4ade80; }
+    .badge-down { background: #7f1d1d; color: #f87171; }
+    .badge-degraded { background: #713f12; color: #fbbf24; }
+    .badge-unknown { background: #1e293b; color: #64748b; border: 1px solid #334155; }
+    .add-form { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1.25rem; margin-top: 2rem; }
+    .add-form h3 { font-size: 0.9rem; font-weight: 600; color: #94a3b8; margin-bottom: 1rem; }
+    .form-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+    .form-row input { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 0.5rem 0.75rem; color: #e2e8f0; font-size: 0.9rem; flex: 1; min-width: 150px; }
+    .form-row input:focus { outline: none; border-color: #38bdf8; }
+    .form-row button { background: #0284c7; color: white; border: none; border-radius: 8px; padding: 0.5rem 1.25rem; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
+    .form-row button:hover { background: #0369a1; }
+    .last-updated { font-size: 0.72rem; color: #475569; margin-top: 1.5rem; text-align: center; }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+    .dot-up { animation: pulse 2s ease-in-out infinite; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>⚡ PulseCheck</h1>
+    <span>Know before your customers do</span>
+  </header>
+  <div class="container">
+    <div class="summary" id="summary">
+      <div class="stat-card"><div class="label">Overall Uptime</div><div class="value green" id="uptime">—</div></div>
+      <div class="stat-card"><div class="label">Monitors</div><div class="value blue" id="total">—</div></div>
+      <div class="stat-card"><div class="label">Up</div><div class="value green" id="up-count">—</div></div>
+      <div class="stat-card"><div class="label">Down</div><div class="value red" id="down-count">—</div></div>
+    </div>
+
+    <div class="section-title">Monitors</div>
+    <div class="monitor-list" id="monitor-list">
+      <div style="color:#475569;font-size:0.85rem;">Loading...</div>
+    </div>
+
+    <div class="add-form">
+      <h3>Add Monitor</h3>
+      <div class="form-row">
+        <input type="text" id="new-name" placeholder="Name (e.g. My API)" />
+        <input type="url" id="new-url" placeholder="URL (e.g. https://api.example.com/health)" />
+        <button onclick="addMonitor()">Add</button>
+      </div>
+    </div>
+
+    <div class="last-updated" id="last-updated">Auto-refreshing every 30 seconds</div>
+  </div>
+
+  <script>
+    async function loadStatus() {
+      try {
+        const res = await fetch('/api/status');
+        const data = await res.json();
+
+        document.getElementById('uptime').textContent = data.overall_uptime_percent + '%';
+        document.getElementById('total').textContent = data.total_monitors;
+        document.getElementById('up-count').textContent = data.monitors_up;
+        document.getElementById('down-count').textContent = data.monitors_down;
+
+        const list = document.getElementById('monitor-list');
+        if (!data.monitors.length) {
+          list.innerHTML = '<div style="color:#475569;font-size:0.85rem;">No monitors yet.</div>';
+          return;
+        }
+
+        list.innerHTML = data.monitors.map(m => {
+          const st = m.last_status || 'unknown';
+          const resp = m.last_response_time ? m.last_response_time + 'ms' : '—';
+          const checked = m.last_checked_at ? new Date(m.last_checked_at).toLocaleTimeString() : 'never';
+          return `
+            <div class="monitor-card">
+              <div class="status-dot dot-${st}"></div>
+              <div class="monitor-info">
+                <div class="monitor-name">${m.name}</div>
+                <div class="monitor-url">${m.url}</div>
+              </div>
+              <div class="monitor-meta">
+                <span class="badge badge-${st}">${st}</span>
+                <div class="resp" style="margin-top:4px">${resp}</div>
+                <div>Last: ${checked}</div>
+              </div>
+            </div>`;
+        }).join('');
+
+        document.getElementById('last-updated').textContent = 'Last refreshed: ' + new Date().toLocaleTimeString();
+      } catch (e) {
+        console.error('Failed to load status', e);
+      }
+    }
+
+    async function addMonitor() {
+      const name = document.getElementById('new-name').value.trim();
+      const url = document.getElementById('new-url').value.trim();
+      if (!name || !url) return alert('Name and URL are required');
+
+      const res = await fetch('/api/monitors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, url })
+      });
+
+      if (res.ok) {
+        document.getElementById('new-name').value = '';
+        document.getElementById('new-url').value = '';
+        loadStatus();
+      } else {
+        const err = await res.json();
+        alert('Error: ' + err.error);
+      }
+    }
+
+    loadStatus();
+    setInterval(loadStatus, 30000);
+  </script>
+</body>
+</html>
