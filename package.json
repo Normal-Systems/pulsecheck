@@ -1,14 +1,16 @@
 {
   "name": "pulsecheck",
   "version": "1.0.0",
-  "description": "Uptime monitoring and status pages",
+  "description": "Uptime monitoring SaaS \u2014 know before your customers do",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "nodemon server.js"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "cors": "^2.8.5"
+    "node-cron": "^3.0.3",
+    "node-fetch": "^2.7.0",
+    "better-sqlite3": "^9.4.3"
   }
 }

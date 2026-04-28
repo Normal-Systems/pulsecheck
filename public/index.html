@@ -4,146 +4,682 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PulseCheck — Uptime Monitoring</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; }
-    header { background: #1e293b; border-bottom: 1px solid #334155; padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between; }
-    header h1 { font-size: 1.4rem; font-weight: 700; color: #38bdf8; letter-spacing: -0.02em; }
-    header span { font-size: 0.8rem; color: #64748b; }
-    .container { max-width: 900px; margin: 0 auto; padding: 2rem 1rem; }
-    .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
-    .stat-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1.25rem; }
-    .stat-card .label { font-size: 0.75rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.4rem; }
-    .stat-card .value { font-size: 1.8rem; font-weight: 700; }
-    .value.green { color: #4ade80; }
-    .value.red { color: #f87171; }
-    .value.blue { color: #38bdf8; }
-    .value.yellow { color: #fbbf24; }
-    .section-title { font-size: 1rem; font-weight: 600; color: #94a3b8; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.06em; }
-    .monitor-list { display: flex; flex-direction: column; gap: 0.75rem; }
-    .monitor-card { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1rem 1.25rem; display: flex; align-items: center; gap: 1rem; }
-    .status-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
-    .dot-up { background: #4ade80; box-shadow: 0 0 8px #4ade8080; }
-    .dot-down { background: #f87171; box-shadow: 0 0 8px #f8717180; }
-    .dot-degraded { background: #fbbf24; box-shadow: 0 0 8px #fbbf2480; }
-    .dot-unknown { background: #64748b; }
-    .monitor-info { flex: 1; }
-    .monitor-name { font-weight: 600; font-size: 0.95rem; }
-    .monitor-url { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
-    .monitor-meta { text-align: right; font-size: 0.78rem; color: #64748b; }
-    .monitor-meta .resp { font-weight: 600; color: #94a3b8; }
-    .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 600; text-transform: uppercase; }
-    .badge-up { background: #14532d; color: #4ade80; }
-    .badge-down { background: #7f1d1d; color: #f87171; }
-    .badge-degraded { background: #713f12; color: #fbbf24; }
-    .badge-unknown { background: #1e293b; color: #64748b; border: 1px solid #334155; }
-    .add-form { background: #1e293b; border: 1px solid #334155; border-radius: 12px; padding: 1.25rem; margin-top: 2rem; }
-    .add-form h3 { font-size: 0.9rem; font-weight: 600; color: #94a3b8; margin-bottom: 1rem; }
-    .form-row { display: flex; gap: 0.75rem; flex-wrap: wrap; }
-    .form-row input { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 0.5rem 0.75rem; color: #e2e8f0; font-size: 0.9rem; flex: 1; min-width: 150px; }
-    .form-row input:focus { outline: none; border-color: #38bdf8; }
-    .form-row button { background: #0284c7; color: white; border: none; border-radius: 8px; padding: 0.5rem 1.25rem; font-size: 0.9rem; font-weight: 600; cursor: pointer; }
-    .form-row button:hover { background: #0369a1; }
-    .last-updated { font-size: 0.72rem; color: #475569; margin-top: 1.5rem; text-align: center; }
-    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
-    .dot-up { animation: pulse 2s ease-in-out infinite; }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --navy: #0f172a;
+      --navy-800: #1e293b;
+      --navy-700: #334155;
+      --indigo: #6366f1;
+      --indigo-hover: #4f46e5;
+      --indigo-light: #eef2ff;
+      --green: #22c55e;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --white: #ffffff;
+    }
+
+    body {
+      font-family: 'Inter', system-ui, -apple-system, sans-serif;
+      color: var(--text);
+      background: var(--white);
+      line-height: 1.6;
+    }
+
+    /* NAV */
+    nav {
+      background: var(--navy);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      color: var(--white);
+      font-size: 1.375rem;
+      font-weight: 700;
+      text-decoration: none;
+    }
+
+    .brand .pulse-icon {
+      font-size: 1.5rem;
+    }
+
+    nav .nav-links {
+      display: flex;
+      gap: 1.5rem;
+      align-items: center;
+    }
+
+    nav .nav-links a {
+      color: #94a3b8;
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: color 0.2s;
+    }
+
+    nav .nav-links a:hover { color: var(--white); }
+
+    .btn {
+      display: inline-block;
+      padding: 0.65rem 1.5rem;
+      border-radius: 0.5rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.1s;
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn-primary {
+      background: var(--indigo);
+      color: var(--white);
+    }
+
+    .btn-primary:hover {
+      background: var(--indigo-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-outline {
+      background: transparent;
+      color: var(--white);
+      border: 2px solid rgba(255,255,255,0.3);
+    }
+
+    .btn-outline:hover {
+      border-color: rgba(255,255,255,0.7);
+    }
+
+    /* HERO */
+    .hero {
+      background: linear-gradient(135deg, var(--navy) 0%, #1e1b4b 60%, #312e81 100%);
+      color: var(--white);
+      padding: 6rem 2rem 7rem;
+      text-align: center;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: rgba(99,102,241,0.2);
+      border: 1px solid rgba(99,102,241,0.4);
+      color: #a5b4fc;
+      padding: 0.3rem 0.85rem;
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .hero h1 {
+      font-size: clamp(2.25rem, 5vw, 3.75rem);
+      font-weight: 800;
+      line-height: 1.15;
+      max-width: 750px;
+      margin: 0 auto 1rem;
+    }
+
+    .hero h1 span { color: #a5b4fc; }
+
+    .hero p {
+      font-size: 1.2rem;
+      color: #94a3b8;
+      max-width: 520px;
+      margin: 0 auto 2.5rem;
+    }
+
+    .hero-cta {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .hero .btn-primary {
+      font-size: 1rem;
+      padding: 0.85rem 2rem;
+    }
+
+    /* FEATURES */
+    .section { padding: 5rem 2rem; }
+    .section-title {
+      text-align: center;
+      font-size: clamp(1.75rem, 3vw, 2.25rem);
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+    }
+    .section-subtitle {
+      text-align: center;
+      color: var(--muted);
+      font-size: 1rem;
+      max-width: 500px;
+      margin: 0 auto 3rem;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      padding: 2rem;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+
+    .card:hover {
+      box-shadow: 0 8px 30px rgba(0,0,0,0.08);
+      transform: translateY(-2px);
+    }
+
+    .card .icon {
+      font-size: 2.25rem;
+      margin-bottom: 1rem;
+    }
+
+    .card h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .card p {
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.7;
+    }
+
+    /* STATUS SECTION */
+    .status-section {
+      background: #f8fafc;
+      padding: 5rem 2rem;
+    }
+
+    .status-panel {
+      max-width: 700px;
+      margin: 0 auto;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 1rem;
+      overflow: hidden;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+    }
+
+    .status-panel-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .status-panel-header h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .status-overall {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: #16a34a;
+    }
+
+    .status-overall .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      animation: pulse-dot 2s infinite;
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .monitor-row {
+      display: flex;
+      align-items: center;
+      padding: 1rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      gap: 0.75rem;
+      transition: background 0.15s;
+    }
+
+    .monitor-row:last-child { border-bottom: none; }
+    .monitor-row:hover { background: #f8fafc; }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .status-dot.up { background: var(--green); }
+    .status-dot.degraded { background: var(--yellow); }
+    .status-dot.down { background: var(--red); }
+
+    .monitor-info { flex: 1; min-width: 0; }
+    .monitor-name {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .monitor-url {
+      font-size: 0.78rem;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .monitor-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-shrink: 0;
+    }
+
+    .status-badge {
+      padding: 0.2rem 0.65rem;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: capitalize;
+    }
+
+    .status-badge.up { background: #dcfce7; color: #15803d; }
+    .status-badge.degraded { background: #fef3c7; color: #92400e; }
+    .status-badge.down { background: #fee2e2; color: #991b1b; }
+
+    .monitor-uptime {
+      font-size: 0.82rem;
+      color: var(--muted);
+      font-weight: 500;
+      min-width: 70px;
+      text-align: right;
+    }
+
+    .loading-state {
+      padding: 2rem;
+      text-align: center;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .error-state {
+      padding: 2rem;
+      text-align: center;
+      color: var(--red);
+      font-size: 0.9rem;
+    }
+
+    /* PRICING */
+    .pricing-section {
+      padding: 5rem 2rem;
+      background: var(--white);
+    }
+
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .pricing-card {
+      background: var(--white);
+      border: 2px solid var(--border);
+      border-radius: 1.25rem;
+      padding: 2rem;
+      position: relative;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+
+    .pricing-card:hover {
+      box-shadow: 0 8px 30px rgba(0,0,0,0.1);
+      transform: translateY(-2px);
+    }
+
+    .pricing-card.popular {
+      border-color: var(--indigo);
+      box-shadow: 0 4px 20px rgba(99,102,241,0.15);
+    }
+
+    .popular-badge {
+      position: absolute;
+      top: -0.75rem;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--indigo);
+      color: var(--white);
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.2rem 0.85rem;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+    }
+
+    .pricing-tier {
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--indigo);
+      margin-bottom: 0.5rem;
+    }
+
+    .pricing-amount {
+      display: flex;
+      align-items: baseline;
+      gap: 0.25rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .price {
+      font-size: 2.75rem;
+      font-weight: 800;
+      color: var(--text);
+    }
+
+    .price-period {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .pricing-desc {
+      color: var(--muted);
+      font-size: 0.85rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .feature-list {
+      list-style: none;
+      margin-bottom: 2rem;
+    }
+
+    .feature-list li {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.875rem;
+      padding: 0.35rem 0;
+      color: var(--text);
+    }
+
+    .feature-list li::before {
+      content: '✓';
+      color: var(--green);
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .btn-block {
+      display: block;
+      width: 100%;
+      text-align: center;
+      padding: 0.75rem;
+      border-radius: 0.625rem;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s, transform 0.1s;
+      border: 2px solid var(--border);
+      color: var(--text);
+      background: transparent;
+    }
+
+    .btn-block:hover {
+      border-color: var(--indigo);
+      color: var(--indigo);
+    }
+
+    .btn-block.btn-primary {
+      border-color: var(--indigo);
+      background: var(--indigo);
+      color: var(--white);
+    }
+
+    .btn-block.btn-primary:hover {
+      background: var(--indigo-hover);
+    }
+
+    /* FOOTER */
+    footer {
+      background: var(--navy);
+      color: #94a3b8;
+      text-align: center;
+      padding: 2rem;
+      font-size: 0.875rem;
+    }
+
+    footer strong { color: #e2e8f0; }
+
+    /* RESPONSIVE */
+    @media (max-width: 640px) {
+      nav { padding: 1rem; }
+      nav .nav-links { display: none; }
+      .hero { padding: 4rem 1rem 5rem; }
+      .section, .status-section, .pricing-section { padding: 3.5rem 1rem; }
+      .monitor-meta { flex-direction: column; align-items: flex-end; gap: 0.25rem; }
+    }
   </style>
 </head>
 <body>
-  <header>
-    <h1>⚡ PulseCheck</h1>
-    <span>Know before your customers do</span>
-  </header>
-  <div class="container">
-    <div class="summary" id="summary">
-      <div class="stat-card"><div class="label">Overall Uptime</div><div class="value green" id="uptime">—</div></div>
-      <div class="stat-card"><div class="label">Monitors</div><div class="value blue" id="total">—</div></div>
-      <div class="stat-card"><div class="label">Up</div><div class="value green" id="up-count">—</div></div>
-      <div class="stat-card"><div class="label">Down</div><div class="value red" id="down-count">—</div></div>
-    </div>
 
-    <div class="section-title">Monitors</div>
-    <div class="monitor-list" id="monitor-list">
-      <div style="color:#475569;font-size:0.85rem;">Loading...</div>
+  <!-- NAV -->
+  <nav>
+    <a href="/" class="brand">
+      <span class="pulse-icon">❤️</span>
+      PulseCheck
+    </a>
+    <div class="nav-links">
+      <a href="#features">Features</a>
+      <a href="#status">Status Demo</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#" class="btn btn-primary" style="padding:0.5rem 1.1rem;">Get Started</a>
     </div>
+  </nav>
 
-    <div class="add-form">
-      <h3>Add Monitor</h3>
-      <div class="form-row">
-        <input type="text" id="new-name" placeholder="Name (e.g. My API)" />
-        <input type="url" id="new-url" placeholder="URL (e.g. https://api.example.com/health)" />
-        <button onclick="addMonitor()">Add</button>
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-badge">🚀 Trusted by 2,000+ teams</div>
+    <h1>Know before your<br/><span>customers do.</span></h1>
+    <p>Uptime monitoring in 60 seconds. Get instant alerts when your services go down, and share beautiful status pages with your users.</p>
+    <div class="hero-cta">
+      <a href="#" class="btn btn-primary">Start Monitoring Free</a>
+      <a href="#status" class="btn btn-outline">See Live Demo</a>
+    </div>
+  </section>
+
+  <!-- FEATURES -->
+  <section class="section" id="features">
+    <h2 class="section-title">Everything you need to stay online</h2>
+    <p class="section-subtitle">Simple, powerful uptime monitoring that works out of the box.</p>
+    <div class="grid-3">
+      <div class="card">
+        <div class="icon">⏱️</div>
+        <h3>60-Second Checks</h3>
+        <p>We ping your endpoints every minute so you catch outages instantly — before your customers notice.</p>
+      </div>
+      <div class="card">
+        <div class="icon">🔔</div>
+        <h3>Instant Alerts</h3>
+        <p>Get notified via email, SMS, Slack, or PagerDuty the moment something goes wrong. Zero delay.</p>
+      </div>
+      <div class="card">
+        <div class="icon">📊</div>
+        <h3>Public Status Pages</h3>
+        <p>Share a beautiful, auto-updating status page with your customers. Build trust and reduce support tickets.</p>
       </div>
     </div>
+  </section>
 
-    <div class="last-updated" id="last-updated">Auto-refreshing every 30 seconds</div>
-  </div>
+  <!-- LIVE STATUS DEMO -->
+  <section class="status-section" id="status">
+    <h2 class="section-title">Live Status Demo</h2>
+    <p class="section-subtitle">Real-time status fetched from our API — this is what your customers see.</p>
+
+    <div class="status-panel">
+      <div class="status-panel-header">
+        <h3>All Systems Status</h3>
+        <span class="status-overall">
+          <span class="dot"></span>
+          All systems operational
+        </span>
+      </div>
+      <div id="monitors-container">
+        <div class="loading-state">Loading status data…</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRICING -->
+  <section class="pricing-section" id="pricing">
+    <h2 class="section-title">Simple, transparent pricing</h2>
+    <p class="section-subtitle">Start free, upgrade when you're ready. No surprise charges.</p>
+
+    <div class="pricing-grid">
+      <!-- Free -->
+      <div class="pricing-card">
+        <div class="pricing-tier">Free</div>
+        <div class="pricing-amount">
+          <span class="price">€0</span>
+          <span class="price-period">/month</span>
+        </div>
+        <p class="pricing-desc">Perfect for side projects and small teams.</p>
+        <ul class="feature-list">
+          <li>3 monitors</li>
+          <li>5-minute checks</li>
+          <li>Email alerts</li>
+        </ul>
+        <a href="#" class="btn-block">Get Started</a>
+      </div>
+
+      <!-- Pro -->
+      <div class="pricing-card popular">
+        <div class="popular-badge">Most Popular</div>
+        <div class="pricing-tier">Pro</div>
+        <div class="pricing-amount">
+          <span class="price">€19</span>
+          <span class="price-period">/month</span>
+        </div>
+        <p class="pricing-desc">The right tool for growing businesses.</p>
+        <ul class="feature-list">
+          <li>50 monitors</li>
+          <li>1-minute checks</li>
+          <li>SMS + Email alerts</li>
+          <li>Custom status page</li>
+        </ul>
+        <a href="#" class="btn-block btn-primary">Get Started</a>
+      </div>
+
+      <!-- Business -->
+      <div class="pricing-card">
+        <div class="pricing-tier">Business</div>
+        <div class="pricing-amount">
+          <span class="price">€79</span>
+          <span class="price-period">/month</span>
+        </div>
+        <p class="pricing-desc">Enterprise-grade reliability for critical systems.</p>
+        <ul class="feature-list">
+          <li>Unlimited monitors</li>
+          <li>30-second checks</li>
+          <li>Slack + PagerDuty + SMS</li>
+          <li>SLA guarantee</li>
+        </ul>
+        <a href="#" class="btn-block">Get Started</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>Copyright &copy; 2025 <strong>PulseCheck</strong>. All rights reserved.</p>
+  </footer>
 
   <script>
-    async function loadStatus() {
-      try {
-        const res = await fetch('/api/status');
-        const data = await res.json();
+    const STATUS_COLORS = {
+      up:       { dot: '#22c55e', badge: 'up' },
+      degraded: { dot: '#f59e0b', badge: 'degraded' },
+      down:     { dot: '#ef4444', badge: 'down' }
+    };
 
-        document.getElementById('uptime').textContent = data.overall_uptime_percent + '%';
-        document.getElementById('total').textContent = data.total_monitors;
-        document.getElementById('up-count').textContent = data.monitors_up;
-        document.getElementById('down-count').textContent = data.monitors_down;
-
-        const list = document.getElementById('monitor-list');
-        if (!data.monitors.length) {
-          list.innerHTML = '<div style="color:#475569;font-size:0.85rem;">No monitors yet.</div>';
-          return;
-        }
-
-        list.innerHTML = data.monitors.map(m => {
-          const st = m.last_status || 'unknown';
-          const resp = m.last_response_time ? m.last_response_time + 'ms' : '—';
-          const checked = m.last_checked_at ? new Date(m.last_checked_at).toLocaleTimeString() : 'never';
-          return `
-            <div class="monitor-card">
-              <div class="status-dot dot-${st}"></div>
-              <div class="monitor-info">
-                <div class="monitor-name">${m.name}</div>
-                <div class="monitor-url">${m.url}</div>
-              </div>
-              <div class="monitor-meta">
-                <span class="badge badge-${st}">${st}</span>
-                <div class="resp" style="margin-top:4px">${resp}</div>
-                <div>Last: ${checked}</div>
-              </div>
-            </div>`;
-        }).join('');
-
-        document.getElementById('last-updated').textContent = 'Last refreshed: ' + new Date().toLocaleTimeString();
-      } catch (e) {
-        console.error('Failed to load status', e);
-      }
+    function renderMonitor(monitor) {
+      const colors = STATUS_COLORS[monitor.status] || STATUS_COLORS.down;
+      return `
+        <div class="monitor-row">
+          <span class="status-dot ${colors.badge}"></span>
+          <div class="monitor-info">
+            <div class="monitor-name">${escapeHtml(monitor.name)}</div>
+            <div class="monitor-url">${escapeHtml(monitor.url)}</div>
+          </div>
+          <div class="monitor-meta">
+            <span class="status-badge ${colors.badge}">${escapeHtml(monitor.status)}</span>
+            <span class="monitor-uptime">${escapeHtml(monitor.uptime)} uptime</span>
+          </div>
+        </div>
+      `;
     }
 
-    async function addMonitor() {
-      const name = document.getElementById('new-name').value.trim();
-      const url = document.getElementById('new-url').value.trim();
-      if (!name || !url) return alert('Name and URL are required');
+    function escapeHtml(str) {
+      const d = document.createElement('div');
+      d.textContent = str;
+      return d.innerHTML;
+    }
 
-      const res = await fetch('/api/monitors', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, url })
-      });
-
-      if (res.ok) {
-        document.getElementById('new-name').value = '';
-        document.getElementById('new-url').value = '';
-        loadStatus();
-      } else {
-        const err = await res.json();
-        alert('Error: ' + err.error);
+    async function loadStatus() {
+      const container = document.getElementById('monitors-container');
+      try {
+        const res = await fetch('/api/status');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = await res.json();
+        if (!data.monitors || !data.monitors.length) {
+          container.innerHTML = '<div class="loading-state">No monitors configured.</div>';
+          return;
+        }
+        container.innerHTML = data.monitors.map(renderMonitor).join('');
+      } catch (err) {
+        console.error('Failed to load status:', err);
+        container.innerHTML = '<div class="error-state">⚠️ Unable to load status data. Please try refreshing.</div>';
       }
     }
 
     loadStatus();
-    setInterval(loadStatus, 30000);
   </script>
 </body>
 </html>
